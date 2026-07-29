@@ -103,6 +103,7 @@ npm install
 Open three terminals:
 
 **Terminal 1 — Backend**
+
 ```bash
 cd backend
 source venv/bin/activate
@@ -110,12 +111,14 @@ uvicorn main:app --reload
 ```
 
 **Terminal 2 — Frontend**
+
 ```bash
 cd frontend
 npm run dev
 ```
 
 **Terminal 3 — (optional) Engine test**
+
 ```bash
 # From repo root
 python3 test_engine.py
@@ -123,6 +126,30 @@ python3 test_reload.py
 ```
 
 Then open **http://localhost:5173** in your browser.
+
+---
+
+## Benchmarks
+
+Two benchmarks measure order latency at different layers. Neither needs the frontend or the database.
+
+**Matching engine only** — times `submitOrder()` in isolation over 1M+ orders:
+
+```bash
+cd engine
+g++ -std=c++17 -O2 -Iinclude src/bench.cpp src/MatchingEngine.cpp -o bin/bench
+./bin/bench
+```
+
+**Full IPC roundtrip** — times Python → JSON → pipe → C++ → back, excluding the DB. Needs `bin/chronos_engine` already built:
+
+```bash
+cd backend
+source venv/bin/activate
+python bench_ipc.py
+```
+
+Results are hardware-dependent. On our machines the matching itself is sub-microsecond, while the JSON-over-pipe IPC adds roughly 50 µs — so the serialization, not the matching algorithm, is the bottleneck.
 
 ---
 
@@ -143,11 +170,12 @@ chronos/
 │   │   ├── models.py
 │   │   ├── schemas.py
 │   │   └── database.py
+│   ├── bench_ipc.py        # IPC roundtrip benchmark
 │   └── main.py
 ├── engine/
 │   ├── include/            # Types.h, OrderBook.h, MatchingEngine.h
-│   ├── src/                # main.cpp, MatchingEngine.cpp
-│   └── bin/                # compiled binary (gitignored)
+│   ├── src/                # main.cpp, MatchingEngine.cpp, bench.cpp
+│   └── bin/                # compiled binaries (gitignored)
 ├── frontend/
 │   └── src/
 │       ├── pages/          # Dashboard, MarketWatch, OrderBook, PlaceOrder, Portfolio
